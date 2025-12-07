@@ -1,0 +1,756 @@
+import React, { useState, useEffect } from 'react';
+import { PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { Wallet, TrendingUp, Bitcoin, Image, BarChart3, Plus, X, ArrowUpRight, ArrowDownRight, Sparkles, Euro, Pencil, Save, Download, Upload, Trash2 } from 'lucide-react';
+
+const EXPENSE_CATEGORIES = [
+  { id: 'housing', name: 'Casa', color: '#F59E0B', icon: '🏠' },
+  { id: 'food', name: 'Alimentari', color: '#10B981', icon: '🍕' },
+  { id: 'transport', name: 'Trasporti', color: '#3B82F6', icon: '🚗' },
+  { id: 'entertainment', name: 'Svago', color: '#8B5CF6', icon: '🎮' },
+  { id: 'health', name: 'Salute', color: '#EC4899', icon: '💊' },
+  { id: 'shopping', name: 'Shopping', color: '#F97316', icon: '🛍️' },
+  { id: 'subscriptions', name: 'Abbonamenti', color: '#06B6D4', icon: '📱' },
+  { id: 'other', name: 'Altro', color: '#6B7280', icon: '📦' },
+];
+
+const INCOME_CATEGORIES = [
+  { id: 'salary', name: 'Stipendio', color: '#10B981', icon: '💼' },
+  { id: 'freelance', name: 'Freelance', color: '#3B82F6', icon: '💻' },
+  { id: 'investments', name: 'Investimenti', color: '#F59E0B', icon: '📈' },
+  { id: 'other', name: 'Altro', color: '#6B7280', icon: '💰' },
+];
+
+const STORAGE_KEYS = {
+  savings: 'wealthflow_savings',
+  transactions: 'wealthflow_transactions',
+  crypto: 'wealthflow_crypto',
+  stocks: 'wealthflow_stocks',
+  nfts: 'wealthflow_nfts',
+};
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState(null);
+  const [modalMode, setModalMode] = useState('add');
+  const [editingItem, setEditingItem] = useState(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  
+  const [savings, setSavings] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.savings);
+    return saved ? parseFloat(saved) : 15420.50;
+  });
+  
+  const [transactions, setTransactions] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.transactions);
+    return saved ? JSON.parse(saved) : [
+      { id: 1, type: 'income', amount: 2800, category: 'salary', description: 'Stipendio Dicembre', date: '2024-12-01' },
+      { id: 2, type: 'expense', amount: 850, category: 'housing', description: 'Affitto', date: '2024-12-02' },
+      { id: 3, type: 'expense', amount: 320, category: 'food', description: 'Spesa mensile', date: '2024-12-05' },
+      { id: 4, type: 'expense', amount: 45, category: 'subscriptions', description: 'Netflix + Spotify', date: '2024-12-06' },
+      { id: 5, type: 'income', amount: 500, category: 'freelance', description: 'Progetto web', date: '2024-12-10' },
+    ];
+  });
+  
+  const [crypto, setCrypto] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.crypto);
+    return saved ? JSON.parse(saved) : [
+      { id: 1, symbol: 'BTC', name: 'Bitcoin', amount: 0.15, avgPrice: 42000, currentPrice: 97500 },
+      { id: 2, symbol: 'ETH', name: 'Ethereum', amount: 2.5, avgPrice: 2200, currentPrice: 3650 },
+      { id: 3, symbol: 'SOL', name: 'Solana', amount: 25, avgPrice: 85, currentPrice: 225 },
+    ];
+  });
+  
+  const [stocks, setStocks] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.stocks);
+    return saved ? JSON.parse(saved) : [
+      { id: 1, symbol: 'AAPL', name: 'Apple Inc.', shares: 10, avgPrice: 165, currentPrice: 191 },
+      { id: 2, symbol: 'NVDA', name: 'NVIDIA', shares: 5, avgPrice: 450, currentPrice: 875 },
+      { id: 3, symbol: 'MSFT', name: 'Microsoft', shares: 8, avgPrice: 320, currentPrice: 378 },
+    ];
+  });
+  
+  const [nfts, setNfts] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.nfts);
+    return saved ? JSON.parse(saved) : [
+      { id: 1, name: 'Bored Ape #7842', collection: 'BAYC', purchasePrice: 85, currentFloor: 42, image: '🦍' },
+      { id: 2, name: 'Azuki #1234', collection: 'Azuki', purchasePrice: 12, currentFloor: 8.5, image: '🎭' },
+    ];
+  });
+
+  const [newItem, setNewItem] = useState({});
+
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.savings, savings.toString()); }, [savings]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(transactions)); }, [transactions]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.crypto, JSON.stringify(crypto)); }, [crypto]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.stocks, JSON.stringify(stocks)); }, [stocks]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.nfts, JSON.stringify(nfts)); }, [nfts]);
+
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  
+  const cryptoValue = crypto.reduce((sum, c) => sum + (c.amount * c.currentPrice), 0);
+  const cryptoCost = crypto.reduce((sum, c) => sum + (c.amount * c.avgPrice), 0);
+  const cryptoPnL = cryptoValue - cryptoCost;
+  
+  const stocksValue = stocks.reduce((sum, s) => sum + (s.shares * s.currentPrice), 0);
+  const stocksCost = stocks.reduce((sum, s) => sum + (s.shares * s.avgPrice), 0);
+  const stocksPnL = stocksValue - stocksCost;
+  
+  const nftValue = nfts.reduce((sum, n) => sum + n.currentFloor, 0);
+  
+  const totalNetWorth = savings + cryptoValue + stocksValue + (nftValue * 3200);
+
+  const expensesByCategory = EXPENSE_CATEGORIES.map(cat => ({
+    ...cat,
+    value: transactions.filter(t => t.type === 'expense' && t.category === cat.id).reduce((sum, t) => sum + t.amount, 0)
+  })).filter(cat => cat.value > 0);
+
+  const monthlyData = [
+    { month: 'Lug', income: 2800, expenses: 1850 },
+    { month: 'Ago', income: 3100, expenses: 2100 },
+    { month: 'Set', income: 2800, expenses: 1950 },
+    { month: 'Ott', income: 3300, expenses: 2200 },
+    { month: 'Nov', income: 2800, expenses: 1800 },
+    { month: 'Dic', income: totalIncome, expenses: totalExpenses },
+  ];
+
+  const openAddModal = (type) => { setModalType(type); setModalMode('add'); setNewItem({}); setEditingItem(null); setShowModal(true); };
+  const openEditModal = (type, item) => { setModalType(type); setModalMode('edit'); setEditingItem(item); setNewItem({ ...item }); setShowModal(true); };
+
+  const handleSave = () => {
+    if (modalMode === 'add') {
+      switch(modalType) {
+        case 'income':
+        case 'expense':
+          setTransactions([...transactions, { id: Date.now(), type: modalType, amount: parseFloat(newItem.amount) || 0, category: newItem.category || 'other', description: newItem.description || '', date: newItem.date || new Date().toISOString().split('T')[0] }]);
+          break;
+        case 'crypto':
+          setCrypto([...crypto, { id: Date.now(), symbol: newItem.symbol?.toUpperCase() || 'XXX', name: newItem.name || 'Unknown', amount: parseFloat(newItem.amount) || 0, avgPrice: parseFloat(newItem.avgPrice) || 0, currentPrice: parseFloat(newItem.currentPrice) || 0 }]);
+          break;
+        case 'stock':
+          setStocks([...stocks, { id: Date.now(), symbol: newItem.symbol?.toUpperCase() || 'XXX', name: newItem.name || 'Unknown', shares: parseInt(newItem.shares) || 0, avgPrice: parseFloat(newItem.avgPrice) || 0, currentPrice: parseFloat(newItem.currentPrice) || 0 }]);
+          break;
+        case 'nft':
+          setNfts([...nfts, { id: Date.now(), name: newItem.name || 'Unknown NFT', collection: newItem.collection || 'Unknown', purchasePrice: parseFloat(newItem.purchasePrice) || 0, currentFloor: parseFloat(newItem.currentFloor) || 0, image: newItem.image || '🖼️' }]);
+          break;
+        case 'savings':
+          setSavings(parseFloat(newItem.amount) || 0);
+          break;
+      }
+    } else {
+      switch(modalType) {
+        case 'income':
+        case 'expense':
+        case 'transaction':
+          setTransactions(transactions.map(t => t.id === editingItem.id ? { ...t, type: newItem.type || t.type, amount: parseFloat(newItem.amount) || t.amount, category: newItem.category || t.category, description: newItem.description || t.description, date: newItem.date || t.date } : t));
+          break;
+        case 'crypto':
+          setCrypto(crypto.map(c => c.id === editingItem.id ? { ...c, symbol: newItem.symbol?.toUpperCase() || c.symbol, name: newItem.name || c.name, amount: parseFloat(newItem.amount) || c.amount, avgPrice: parseFloat(newItem.avgPrice) || c.avgPrice, currentPrice: parseFloat(newItem.currentPrice) || c.currentPrice } : c));
+          break;
+        case 'stock':
+          setStocks(stocks.map(s => s.id === editingItem.id ? { ...s, symbol: newItem.symbol?.toUpperCase() || s.symbol, name: newItem.name || s.name, shares: parseInt(newItem.shares) || s.shares, avgPrice: parseFloat(newItem.avgPrice) || s.avgPrice, currentPrice: parseFloat(newItem.currentPrice) || s.currentPrice } : s));
+          break;
+        case 'nft':
+          setNfts(nfts.map(n => n.id === editingItem.id ? { ...n, name: newItem.name || n.name, collection: newItem.collection || n.collection, purchasePrice: parseFloat(newItem.purchasePrice) || n.purchasePrice, currentFloor: parseFloat(newItem.currentFloor) || n.currentFloor, image: newItem.image || n.image } : n));
+          break;
+        case 'savings':
+          setSavings(parseFloat(newItem.amount) || savings);
+          break;
+      }
+    }
+    closeModal();
+  };
+
+  const closeModal = () => { setShowModal(false); setNewItem({}); setEditingItem(null); setModalMode('add'); };
+
+  const deleteItem = (type, id) => {
+    if (!confirm('Sei sicuro di voler eliminare questo elemento?')) return;
+    switch(type) {
+      case 'transaction': setTransactions(transactions.filter(t => t.id !== id)); break;
+      case 'crypto': setCrypto(crypto.filter(c => c.id !== id)); break;
+      case 'stock': setStocks(stocks.filter(s => s.id !== id)); break;
+      case 'nft': setNfts(nfts.filter(n => n.id !== id)); break;
+    }
+  };
+
+  const exportData = () => {
+    const data = { savings, transactions, crypto, stocks, nfts, exportDate: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wealthflow-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+  };
+
+  const importData = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.savings !== undefined) setSavings(data.savings);
+        if (data.transactions) setTransactions(data.transactions);
+        if (data.crypto) setCrypto(data.crypto);
+        if (data.stocks) setStocks(data.stocks);
+        if (data.nfts) setNfts(data.nfts);
+        alert('Dati importati con successo!');
+      } catch (err) { alert('Errore nel file di importazione'); }
+    };
+    reader.readAsText(file);
+    setShowExportMenu(false);
+  };
+
+  const formatCurrency = (value) => `€${value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatPercent = (value) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+
+  const tabs = [
+    { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
+    { id: 'transactions', name: 'Transazioni', icon: Wallet },
+    { id: 'crypto', name: 'Crypto', icon: Bitcoin },
+    { id: 'stocks', name: 'Azioni', icon: TrendingUp },
+    { id: 'nfts', name: 'NFT', icon: Image },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white font-sans">
+      {/* Header */}
+      <header className="border-b border-slate-800/50 backdrop-blur-xl bg-slate-900/50 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <Sparkles className="w-5 h-5 text-slate-900" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">Wealth<span className="text-amber-400">Flow</span></h1>
+              <p className="text-xs text-slate-500 hidden sm:block">Portfolio Manager</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <button onClick={() => setShowExportMenu(!showExportMenu)} className="p-2 text-slate-400 hover:text-amber-400 transition rounded-lg hover:bg-slate-800/50">
+                <Save className="w-5 h-5" />
+              </button>
+              {showExportMenu && (
+                <div className="absolute right-0 top-12 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2 min-w-[180px] z-50">
+                  <button onClick={exportData} className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-slate-700 rounded-lg transition">
+                    <Download className="w-4 h-4" /> Esporta Dati
+                  </button>
+                  <label className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-slate-700 rounded-lg transition cursor-pointer">
+                    <Upload className="w-4 h-4" /> Importa Dati
+                    <input type="file" accept=".json" onChange={importData} className="hidden" />
+                  </label>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2 bg-slate-800/50 rounded-full px-3 sm:px-4 py-2 border border-slate-700/50">
+              <Euro className="w-4 h-4 text-amber-400" />
+              <span className="font-mono text-sm font-bold">{formatCurrency(totalNetWorth)}</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation */}
+      <nav className="border-b border-slate-800/50 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex gap-1 overflow-x-auto py-2">
+            {tabs.map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}>
+                <tab.icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{tab.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        
+        {/* Dashboard */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-gradient-to-br from-slate-800/80 to-slate-800/40 rounded-2xl p-4 sm:p-5 border border-slate-700/50 hover:shadow-xl transition">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-slate-400 text-xs sm:text-sm">Risparmi</span>
+                  <Wallet className="w-4 sm:w-5 h-4 sm:h-5 text-amber-400" />
+                </div>
+                <p className="font-mono text-lg sm:text-2xl font-bold">{formatCurrency(savings)}</p>
+                <button onClick={() => { setNewItem({ amount: savings }); setModalType('savings'); setModalMode('edit'); setShowModal(true); }} className="mt-2 text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1">
+                  <Pencil className="w-3 h-3" /> Modifica
+                </button>
+              </div>
+              
+              <div className="bg-gradient-to-br from-emerald-900/30 to-slate-800/40 rounded-2xl p-4 sm:p-5 border border-emerald-700/30 hover:shadow-xl hover:shadow-emerald-500/10 transition">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-slate-400 text-xs sm:text-sm">Entrate</span>
+                  <ArrowUpRight className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-400" />
+                </div>
+                <p className="font-mono text-lg sm:text-2xl font-bold text-emerald-400">{formatCurrency(totalIncome)}</p>
+                <button onClick={() => openAddModal('income')} className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                  <Plus className="w-3 h-3" /> Aggiungi
+                </button>
+              </div>
+              
+              <div className="bg-gradient-to-br from-red-900/30 to-slate-800/40 rounded-2xl p-4 sm:p-5 border border-red-700/30 hover:shadow-xl hover:shadow-red-500/10 transition">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-slate-400 text-xs sm:text-sm">Uscite</span>
+                  <ArrowDownRight className="w-4 sm:w-5 h-4 sm:h-5 text-red-400" />
+                </div>
+                <p className="font-mono text-lg sm:text-2xl font-bold text-red-400">{formatCurrency(totalExpenses)}</p>
+                <button onClick={() => openAddModal('expense')} className="mt-2 text-xs text-red-400 hover:text-red-300 flex items-center gap-1">
+                  <Plus className="w-3 h-3" /> Aggiungi
+                </button>
+              </div>
+              
+              <div className="bg-gradient-to-br from-slate-800/80 to-slate-800/40 rounded-2xl p-4 sm:p-5 border border-slate-700/50 hover:shadow-xl transition">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-slate-400 text-xs sm:text-sm">Investimenti</span>
+                  <TrendingUp className="w-4 sm:w-5 h-4 sm:h-5 text-blue-400" />
+                </div>
+                <p className="font-mono text-lg sm:text-2xl font-bold">{formatCurrency(cryptoValue + stocksValue)}</p>
+                <p className={`text-xs mt-1 font-mono ${(cryptoPnL + stocksPnL) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {formatCurrency(cryptoPnL + stocksPnL)} ({formatPercent(((cryptoPnL + stocksPnL) / (cryptoCost + stocksCost || 1)) * 100)})
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="lg:col-span-2 bg-slate-800/50 rounded-2xl p-4 sm:p-6 border border-slate-700/50">
+                <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-amber-400" /> Andamento Mensile
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <AreaChart data={monthlyData}>
+                    <defs>
+                      <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `€${v/1000}k`} />
+                    <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px' }} />
+                    <Area type="monotone" dataKey="income" stroke="#10B981" strokeWidth={2} fill="url(#incomeGrad)" name="Entrate" />
+                    <Area type="monotone" dataKey="expenses" stroke="#EF4444" strokeWidth={2} fill="url(#expenseGrad)" name="Uscite" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="bg-slate-800/50 rounded-2xl p-4 sm:p-6 border border-slate-700/50">
+                <h3 className="text-base sm:text-lg font-semibold mb-4">Uscite per Categoria</h3>
+                {expensesByCategory.length > 0 ? (
+                  <>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <PieChart>
+                        <Pie data={expensesByCategory} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" stroke="none">
+                          {expensesByCategory.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
+                        </Pie>
+                        <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }} formatter={(value) => [`€${value}`, '']} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="space-y-2 mt-4">
+                      {expensesByCategory.slice(0, 4).map(cat => (
+                        <div key={cat.id} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                            <span className="text-slate-400">{cat.icon} {cat.name}</span>
+                          </div>
+                          <span className="font-mono">{formatCurrency(cat.value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (<p className="text-slate-500 text-center py-8">Nessuna spesa registrata</p>)}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="bg-gradient-to-br from-orange-900/20 to-slate-800/40 rounded-2xl p-4 sm:p-5 border border-orange-700/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <Bitcoin className="w-5 sm:w-6 h-5 sm:h-6 text-orange-400" />
+                  <span className="font-semibold text-sm sm:text-base">Crypto</span>
+                </div>
+                <p className="font-mono text-lg sm:text-xl font-bold">{formatCurrency(cryptoValue)}</p>
+                <p className={`text-sm font-mono ${cryptoPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{formatCurrency(cryptoPnL)} P&L</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-blue-900/20 to-slate-800/40 rounded-2xl p-4 sm:p-5 border border-blue-700/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <TrendingUp className="w-5 sm:w-6 h-5 sm:h-6 text-blue-400" />
+                  <span className="font-semibold text-sm sm:text-base">Azioni</span>
+                </div>
+                <p className="font-mono text-lg sm:text-xl font-bold">{formatCurrency(stocksValue)}</p>
+                <p className={`text-sm font-mono ${stocksPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{formatCurrency(stocksPnL)} P&L</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-purple-900/20 to-slate-800/40 rounded-2xl p-4 sm:p-5 border border-purple-700/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <Image className="w-5 sm:w-6 h-5 sm:h-6 text-purple-400" />
+                  <span className="font-semibold text-sm sm:text-base">NFT</span>
+                </div>
+                <p className="font-mono text-lg sm:text-xl font-bold">{nftValue.toFixed(2)} ETH</p>
+                <p className="text-sm text-slate-400">{nfts.length} items</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Transactions Tab */}
+        {activeTab === 'transactions' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold">Transazioni</h2>
+              <div className="flex gap-2">
+                <button onClick={() => openAddModal('income')} className="px-3 sm:px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition flex items-center gap-2 text-sm font-medium">
+                  <Plus className="w-4 h-4" /> Entrata
+                </button>
+                <button onClick={() => openAddModal('expense')} className="px-3 sm:px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition flex items-center gap-2 text-sm font-medium">
+                  <Plus className="w-4 h-4" /> Uscita
+                </button>
+              </div>
+            </div>
+            
+            <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
+              {transactions.length > 0 ? (
+                <div className="divide-y divide-slate-700/50">
+                  {transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map(t => {
+                    const cat = t.type === 'income' ? INCOME_CATEGORIES.find(c => c.id === t.category) : EXPENSE_CATEGORIES.find(c => c.id === t.category);
+                    return (
+                      <div key={t.id} className="flex items-center justify-between p-3 sm:p-4 hover:bg-slate-700/30 transition group">
+                        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                          <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ backgroundColor: `${cat?.color}20` }}>{cat?.icon}</div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm sm:text-base truncate">{t.description}</p>
+                            <p className="text-xs sm:text-sm text-slate-500">{cat?.name} • {new Date(t.date).toLocaleDateString('it-IT')}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                          <p className={`font-mono font-bold text-sm sm:text-base ${t.type === 'income' ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                          </p>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                            <button onClick={() => openEditModal('transaction', t)} className="text-slate-500 hover:text-amber-400 p-1"><Pencil className="w-4 h-4" /></button>
+                            <button onClick={() => deleteItem('transaction', t.id)} className="text-slate-500 hover:text-red-400 p-1"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (<p className="text-slate-500 text-center py-12">Nessuna transazione registrata</p>)}
+            </div>
+          </div>
+        )}
+
+        {/* Crypto Tab */}
+        {activeTab === 'crypto' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold">Crypto Portfolio</h2>
+              <button onClick={() => openAddModal('crypto')} className="px-4 py-2 bg-amber-400/20 text-amber-400 rounded-lg hover:bg-amber-400/30 transition flex items-center gap-2 text-sm font-medium">
+                <Plus className="w-4 h-4" /> Aggiungi Crypto
+              </button>
+            </div>
+            
+            <div className="grid gap-4">
+              {crypto.map(c => {
+                const value = c.amount * c.currentPrice;
+                const cost = c.amount * c.avgPrice;
+                const pnl = value - cost;
+                const pnlPercent = ((c.currentPrice - c.avgPrice) / c.avgPrice) * 100;
+                return (
+                  <div key={c.id} className="bg-slate-800/50 rounded-2xl p-4 sm:p-5 border border-slate-700/50 hover:shadow-xl transition group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                          <Bitcoin className="w-5 sm:w-6 h-5 sm:h-6 text-orange-400" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-base sm:text-lg">{c.symbol}</p>
+                          <p className="text-slate-500 text-xs sm:text-sm">{c.name}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-mono font-bold text-base sm:text-lg">{formatCurrency(value)}</p>
+                        <p className={`font-mono text-xs sm:text-sm ${pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {formatCurrency(pnl)} ({formatPercent(pnlPercent)})
+                        </p>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition ml-2 sm:ml-4">
+                        <button onClick={() => openEditModal('crypto', c)} className="text-slate-500 hover:text-amber-400 p-1"><Pencil className="w-4 sm:w-5 h-4 sm:h-5" /></button>
+                        <button onClick={() => deleteItem('crypto', c.id)} className="text-slate-500 hover:text-red-400 p-1"><Trash2 className="w-4 sm:w-5 h-4 sm:h-5" /></button>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-slate-700/50 grid grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
+                      <div><p className="text-slate-500">Quantità</p><p className="font-mono">{c.amount}</p></div>
+                      <div><p className="text-slate-500">PMC</p><p className="font-mono">{formatCurrency(c.avgPrice)}</p></div>
+                      <div><p className="text-slate-500">Prezzo</p><p className="font-mono">{formatCurrency(c.currentPrice)}</p></div>
+                    </div>
+                  </div>
+                );
+              })}
+              {crypto.length === 0 && (<p className="text-slate-500 text-center py-12">Nessuna crypto nel portfolio</p>)}
+            </div>
+          </div>
+        )}
+
+        {/* Stocks Tab */}
+        {activeTab === 'stocks' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold">Portafoglio Azioni</h2>
+              <button onClick={() => openAddModal('stock')} className="px-4 py-2 bg-blue-400/20 text-blue-400 rounded-lg hover:bg-blue-400/30 transition flex items-center gap-2 text-sm font-medium">
+                <Plus className="w-4 h-4" /> Aggiungi Azione
+              </button>
+            </div>
+            
+            <div className="grid gap-4">
+              {stocks.map(s => {
+                const value = s.shares * s.currentPrice;
+                const cost = s.shares * s.avgPrice;
+                const pnl = value - cost;
+                const pnlPercent = ((s.currentPrice - s.avgPrice) / s.avgPrice) * 100;
+                return (
+                  <div key={s.id} className="bg-slate-800/50 rounded-2xl p-4 sm:p-5 border border-slate-700/50 hover:shadow-xl transition group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-blue-500/20 flex items-center justify-center font-mono font-bold text-blue-400 text-sm sm:text-base">{s.symbol.slice(0, 2)}</div>
+                        <div>
+                          <p className="font-bold text-base sm:text-lg">{s.symbol}</p>
+                          <p className="text-slate-500 text-xs sm:text-sm">{s.name}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-mono font-bold text-base sm:text-lg">{formatCurrency(value)}</p>
+                        <p className={`font-mono text-xs sm:text-sm ${pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {formatCurrency(pnl)} ({formatPercent(pnlPercent)})
+                        </p>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition ml-2 sm:ml-4">
+                        <button onClick={() => openEditModal('stock', s)} className="text-slate-500 hover:text-amber-400 p-1"><Pencil className="w-4 sm:w-5 h-4 sm:h-5" /></button>
+                        <button onClick={() => deleteItem('stock', s.id)} className="text-slate-500 hover:text-red-400 p-1"><Trash2 className="w-4 sm:w-5 h-4 sm:h-5" /></button>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-slate-700/50 grid grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
+                      <div><p className="text-slate-500">Azioni</p><p className="font-mono">{s.shares}</p></div>
+                      <div><p className="text-slate-500">PMC</p><p className="font-mono">{formatCurrency(s.avgPrice)}</p></div>
+                      <div><p className="text-slate-500">Prezzo</p><p className="font-mono">{formatCurrency(s.currentPrice)}</p></div>
+                    </div>
+                  </div>
+                );
+              })}
+              {stocks.length === 0 && (<p className="text-slate-500 text-center py-12">Nessuna azione nel portfolio</p>)}
+            </div>
+          </div>
+        )}
+
+        {/* NFTs Tab */}
+        {activeTab === 'nfts' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold">NFT Collection</h2>
+              <button onClick={() => openAddModal('nft')} className="px-4 py-2 bg-purple-400/20 text-purple-400 rounded-lg hover:bg-purple-400/30 transition flex items-center gap-2 text-sm font-medium">
+                <Plus className="w-4 h-4" /> Aggiungi NFT
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {nfts.map(n => {
+                const pnlPercent = ((n.currentFloor - n.purchasePrice) / n.purchasePrice) * 100;
+                return (
+                  <div key={n.id} className="bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/50 hover:shadow-xl transition group">
+                    <div className="h-32 sm:h-40 bg-gradient-to-br from-purple-900/50 to-slate-800 flex items-center justify-center text-5xl sm:text-6xl relative">
+                      {n.image}
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                        <button onClick={() => openEditModal('nft', n)} className="bg-slate-900/80 text-slate-400 hover:text-amber-400 p-1.5 rounded-lg"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => deleteItem('nft', n.id)} className="bg-slate-900/80 text-slate-400 hover:text-red-400 p-1.5 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <p className="font-bold text-sm sm:text-base">{n.name}</p>
+                      <p className="text-slate-500 text-xs sm:text-sm">{n.collection}</p>
+                      <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between text-xs sm:text-sm">
+                        <div><p className="text-slate-500">Floor</p><p className="font-mono">{n.currentFloor} ETH</p></div>
+                        <div className="text-right"><p className="text-slate-500">P&L</p><p className={`font-mono ${pnlPercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{formatPercent(pnlPercent)}</p></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {nfts.length === 0 && (<p className="text-slate-500 text-center py-12 col-span-full">Nessun NFT nella collezione</p>)}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closeModal}>
+          <div className="bg-slate-800 rounded-2xl p-5 sm:p-6 w-full max-w-md border border-slate-700 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg sm:text-xl font-bold">
+                {modalMode === 'edit' ? '✏️ Modifica' : '➕ Aggiungi'}{' '}
+                {(modalType === 'income' || (modalType === 'transaction' && newItem.type === 'income')) && 'Entrata'}
+                {(modalType === 'expense' || (modalType === 'transaction' && newItem.type !== 'income')) && 'Uscita'}
+                {modalType === 'crypto' && 'Crypto'}
+                {modalType === 'stock' && 'Azione'}
+                {modalType === 'nft' && 'NFT'}
+                {modalType === 'savings' && 'Risparmi'}
+              </h3>
+              <button onClick={closeModal} className="text-slate-400 hover:text-white"><X className="w-6 h-6" /></button>
+            </div>
+            
+            <div className="space-y-4">
+              {(modalType === 'income' || modalType === 'expense' || modalType === 'transaction') && (
+                <>
+                  {modalType === 'transaction' && (
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Tipo</label>
+                      <select value={newItem.type || 'expense'} onChange={e => setNewItem({...newItem, type: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none">
+                        <option value="income">Entrata</option>
+                        <option value="expense">Uscita</option>
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm text-slate-400 mb-1 block">Importo (€)</label>
+                    <input type="number" value={newItem.amount || ''} onChange={e => setNewItem({...newItem, amount: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-slate-400 mb-1 block">Categoria</label>
+                    <select value={newItem.category || ''} onChange={e => setNewItem({...newItem, category: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none">
+                      <option value="">Seleziona categoria</option>
+                      {((modalType === 'transaction' ? (newItem.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES) : (modalType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES))).map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-slate-400 mb-1 block">Descrizione</label>
+                    <input type="text" value={newItem.description || ''} onChange={e => setNewItem({...newItem, description: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="Es. Spesa settimanale" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-slate-400 mb-1 block">Data</label>
+                    <input type="date" value={newItem.date || new Date().toISOString().split('T')[0]} onChange={e => setNewItem({...newItem, date: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" />
+                  </div>
+                </>
+              )}
+              
+              {modalType === 'crypto' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Simbolo</label>
+                      <input type="text" value={newItem.symbol || ''} onChange={e => setNewItem({...newItem, symbol: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="BTC" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Nome</label>
+                      <input type="text" value={newItem.name || ''} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="Bitcoin" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-slate-400 mb-1 block">Quantità</label>
+                    <input type="number" step="0.0001" value={newItem.amount || ''} onChange={e => setNewItem({...newItem, amount: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="0.00" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">PMC (€)</label>
+                      <input type="number" value={newItem.avgPrice || ''} onChange={e => setNewItem({...newItem, avgPrice: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Prezzo Attuale (€)</label>
+                      <input type="number" value={newItem.currentPrice || ''} onChange={e => setNewItem({...newItem, currentPrice: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="0.00" />
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {modalType === 'stock' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Ticker</label>
+                      <input type="text" value={newItem.symbol || ''} onChange={e => setNewItem({...newItem, symbol: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="AAPL" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Nome</label>
+                      <input type="text" value={newItem.name || ''} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="Apple Inc." />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-slate-400 mb-1 block">N° Azioni</label>
+                    <input type="number" value={newItem.shares || ''} onChange={e => setNewItem({...newItem, shares: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="0" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">PMC (€)</label>
+                      <input type="number" value={newItem.avgPrice || ''} onChange={e => setNewItem({...newItem, avgPrice: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Prezzo Attuale (€)</label>
+                      <input type="number" value={newItem.currentPrice || ''} onChange={e => setNewItem({...newItem, currentPrice: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="0.00" />
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {modalType === 'nft' && (
+                <>
+                  <div>
+                    <label className="text-sm text-slate-400 mb-1 block">Nome NFT</label>
+                    <input type="text" value={newItem.name || ''} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="CryptoPunk #1234" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Collection</label>
+                      <input type="text" value={newItem.collection || ''} onChange={e => setNewItem({...newItem, collection: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="CryptoPunks" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Emoji</label>
+                      <input type="text" value={newItem.image || ''} onChange={e => setNewItem({...newItem, image: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="🖼️" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Prezzo Acquisto (ETH)</label>
+                      <input type="number" step="0.01" value={newItem.purchasePrice || ''} onChange={e => setNewItem({...newItem, purchasePrice: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Floor Price (ETH)</label>
+                      <input type="number" step="0.01" value={newItem.currentFloor || ''} onChange={e => setNewItem({...newItem, currentFloor: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="0.00" />
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {modalType === 'savings' && (
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Totale Risparmi (€)</label>
+                  <input type="number" value={newItem.amount || ''} onChange={e => setNewItem({...newItem, amount: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-400 focus:outline-none" placeholder="0.00" />
+                </div>
+              )}
+              
+              <button onClick={handleSave} className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 font-bold rounded-lg hover:from-amber-400 hover:to-amber-500 transition mt-4">
+                {modalMode === 'edit' ? 'Salva Modifiche' : 'Aggiungi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
