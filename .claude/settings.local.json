@@ -5,7 +5,16 @@
       "Bash(git init:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: WealthFlow Portfolio Manager\n\nDashboard completa con:\n- Visualizzazione patrimonio totale\n- Grafici interattivi (andamento portfolio e distribuzione asset)\n- Gestione risparmi, azioni, crypto e NFT\n- Lista transazioni recenti\n- UI responsive con Tailwind CSS\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(gh repo create:*)",
+      "Bash(winget install:*)",
+      "Bash(where:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(npm install:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix: Aggiorna configurazione PostCSS per Tailwind v4\n\n- Installa @tailwindcss/postcss\n- Aggiorna postcss.config.js per utilizzare il plugin corretto\n- Risolve errore di build su Vercel\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
